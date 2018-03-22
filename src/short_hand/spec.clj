@@ -1,6 +1,6 @@
 (ns short-hand.spec
   (:require [clojure.spec.alpha :as s]
-            [short-hand.pred :as p]))
+            [pred-i-kit.core :as p]))
 
 (def short-name #"[a-zA-Z][a-zA-Z0-9_-]*")
 
