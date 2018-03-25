@@ -9,9 +9,9 @@
            (clojure.lang ExceptionInfo)))
 
 (defn- validate [my-spec body]
-  (if-let [error (s/explain-data my-spec body)]
-    (throw (ExceptionInfo. "Invalid content" error))
-    body))
+  (when-let [error (s/explain-data my-spec body)]
+    (throw (ExceptionInfo. "Invalid content" {:error error})))
+  body)
 
 (def ^:private xml-entities
   {\< "&lt;"
@@ -25,14 +25,16 @@
 
 (defn- unescape [str-val]
   (reduce-kv
-    #(str/replace #1 (re-pattern #3) (str #2))
+    #(str/replace %1 (re-pattern %3) (str %2))
     str-val
     xml-entities))
 
 (defn- to-long-name [short-name]
   (let [my-namespace (namespace short-name)
         my-name (name short-name)]
-    (keyword (str my-namespace ":" my-name))))
+    (if-not (nil? my-namespace)
+      (keyword (str my-namespace ":" my-name))
+      (keyword my-name))))
 
 (defn to-long-hand [short-hand]
   (let [short-hand (validate ::spec/short-node short-hand)
@@ -45,22 +47,32 @@
                           [(into [attrs] content) {}])
         content (if-not (empty? content)
                   (mapv #(if (or (vector? %) (symbol? %)) (to-long-hand %) (str %)) content)
-                  content)]
-    (validate ::spec/long-node
-              (reduce-kv #(if (empty? %3) %1 (assoc %1 %2 %3))
-                         {:tag tag}
-                         {:attrs attrs :content content}))))
+                  content)
+        node (reduce-kv #(if (empty? %3) %1 (assoc %1 %2 %3))
+                        {:tag tag}
+                        {:attrs attrs :content content})]
+    (validate ::spec/long-node node)))
+
+(defn- trim-parsing [{:keys [tag attrs content]}]
+  (let [content (if-not (empty? content)
+                  (mapv #(if (string? %) (str/trim %) (trim-parsing %)) content)
+                  content)
+        node (reduce-kv #(if (empty? %3) %1 (assoc %1 %2 %3))
+                        {:tag tag}
+                        {:attrs attrs :content content})]
+    node))
 
 (defn stream-long-hand [^InputStream stream]
-  (-> stream
+  (->> stream
       xml/parse
-      zip/xml-zip
+      trim-parsing
       (validate ::spec/long-node)))
 
 (defn long-hand-to-stream [long-hand ^OutputStream stream]
-  (with-open [w (BufferedWriter. (OutputStreamWriter. stream))]
-    (binding [*out* w]
-      (xml/emit-element (validate ::spec/long-node long-hand)))))
+  (let [validated (validate ::spec/long-node long-hand)]
+    (with-open [w (BufferedWriter. (OutputStreamWriter. stream))]
+      (binding [*out* w]
+        (xml/emit-element validated)))))
 
 (defn read-long-hand [^String xml-string]
   (-> xml-string
@@ -89,15 +101,13 @@
     (symbol my-ns my-name)))
 
 (defn to-short-hand [long-hand]
-  (let [{:keys [tag attrs children]} (validate ::spec/long-node long-hand)
+  (let [{:keys [tag attrs content]} (validate ::spec/long-node long-hand)
         tag (to-short-name tag)
         attrs (if (empty? attrs) [] [(reduce-kv #(assoc %1 (to-short-name %2) (unescape %3)) {} attrs)])
-        children (if (empty? children) [] children)
-        attrs-and-children (concat attrs children)]
-    (validate ::spec/short-node
-              (if (empty? attrs-and-children)
-                tag
-                (into [tag] attrs-and-children)))))
+        content (if (empty? content) [] (mapv #(if (string? %) % (to-short-hand %)) content))
+        attrs-and-content (concat attrs content)
+        body (if (empty? attrs-and-content) tag (into [tag] attrs-and-content))]
+    (validate ::spec/short-node body)))
 
 (defn read-short-hand [xml-string]
   (-> xml-string
