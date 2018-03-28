@@ -13,6 +13,12 @@
     (throw (ExceptionInfo. "Invalid content" {:error error})))
   body)
 
+(defn- conform [my-spec body]
+  (let [out-val (s/conform my-spec body)]
+    (if (= out-val ::s/invalid)
+      (validate my-spec body)
+      out-val)))
+
 (def ^:private xml-entities
   {\< "&lt;"
    \> "&gt;"
@@ -42,9 +48,8 @@
     (symbol my-ns my-name)))
 
 (defn to-long-hand [short-hand]
-  (let [short-hand (validate ::spec/short-node short-hand)
-        body (if (symbol? short-hand) [short-hand] short-hand)
-        [tag attrs & content] body
+  (let [{:keys [tag attrs content] :as body} (validate ::spec/short-node short-hand)
+        body (if (symbol? body) [body] body)
         tag (to-long-name tag)
         attrs (if (nil? attrs) {} attrs)
         [content attrs] (if (map? attrs)

@@ -30,9 +30,9 @@
 (s/def ::short-node
   (s/or :single ::short-name
         :full (s/and vector?
-                     (s/cat :name ::short-name
+                     (s/cat :tag ::short-name
                             :attrs (s/? ::short-attrs)
-                            :children (s/* (s/or :node ::short-node
+                            :content (s/* (s/or :node ::short-node
                                                  :primitive ::short-primitive))))))
 
 (s/def ::tag (s/and keyword? (p/named-as #"[a-zA-Z][a-zA-Z0-9_-]*([:][a-zA-Z][a-zA-Z0-9_-]*)?")))
