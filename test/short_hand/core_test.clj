@@ -7,15 +7,16 @@
   (:import (clojure.lang ExceptionInfo)
            (org.joda.time DateTime)))
 
-(deftest test-translate-tag-only
+(deftest test-translate-short-tag-only
   (is (= (to-short-hand {:tag :hi-there}) 'hi-there))
 
   (is (= (to-short-hand {:tag :hi:there}) 'hi/there))
+  )
 
+(deftest test-translate-long-tag-only
   (is (= (to-long-hand 'hi-there) {:tag :hi-there}))
 
   (is (= (to-long-hand 'hi/there) {:tag :hi:there}))
-
   )
 
 (defmethod spec/coercible :default []

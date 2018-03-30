@@ -13,12 +13,6 @@
     (throw (ExceptionInfo. "Invalid content" {:error error})))
   body)
 
-(defn- conform [my-spec body]
-  (let [out-val (s/conform my-spec body)]
-    (if (= out-val ::s/invalid)
-      (validate my-spec body)
-      out-val)))
-
 (def ^:private xml-entities
   {\< "&lt;"
    \> "&gt;"
@@ -48,20 +42,20 @@
     (symbol my-ns my-name)))
 
 (defn to-long-hand [short-hand]
-  (let [{:keys [tag attrs content] :as body} (validate ::spec/short-node short-hand)
-        body (if (symbol? body) [body] body)
+  (let [body (validate ::spec/short-node short-hand)
+        [tag attrs & content] (if (symbol? body) [body] body)
         tag (to-long-name tag)
         attrs (if (nil? attrs) {} attrs)
         [content attrs] (if (map? attrs)
                           [content (reduce (fn [out [k v]] (assoc out (to-long-name k) (escape (str v)))) {} attrs)]
                           [(into [attrs] content) {}])
-        content (if-not (empty? content)
-                  (mapv #(if (or (vector? %) (symbol? %)) (to-long-hand %) (str %)) content)
-                  content)
-        node (reduce-kv #(if (empty? %3) %1 (assoc %1 %2 %3))
-                        {:tag tag}
-                        {:attrs attrs :content content})]
-    (validate ::spec/long-node node)))
+          content (if-not (empty? content)
+                    (mapv #(if (or (vector? %) (symbol? %)) (to-long-hand %) (str %)) content)
+                    content)
+          node (reduce-kv #(if (empty? %3) %1 (assoc %1 %2 %3))
+                          {:tag tag}
+                          {:attrs attrs :content content})]
+      (validate ::spec/long-node node)))
 
 (s/fdef to-long-hand
         :args (s/cat :short-hand ::spec/short-node)
