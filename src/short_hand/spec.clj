@@ -1,8 +1,6 @@
 (ns short-hand.spec
   (:require [clojure.spec.alpha :as s]
             [pred-i-kit.core :as p])
-  (:import (java.util Formatter$DateTime)
-           (org.joda.time DateTime))
   (:gen-class))
 
 (defmulti coercible (fn [] nil))
@@ -15,7 +13,7 @@
     (not (empty? (filter #(instance? % value) (coercible))))))
 
 (s/def ::short-name
-  (s/and symbol?
+  (s/and keyword?
          (s/or :with-ns (p/named-as #"[a-zA-Z][a-zA-Z0-9_-]*" #"[a-zA-Z][a-zA-Z0-9_-]*")
                :no-ns (p/named-as #"[a-zA-Z][a-zA-Z0-9_-]*"))))
 

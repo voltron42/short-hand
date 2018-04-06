@@ -39,18 +39,18 @@
 (defn- to-short-name [long-name]
   (let [[my-ns my-name] (str/split (name long-name) #":")
         [my-ns my-name] (if-not (nil? my-name) [my-ns my-name] [nil my-ns])]
-    (symbol my-ns my-name)))
+    (keyword my-ns my-name)))
 
 (defn to-long-hand [short-hand]
   (let [body (validate ::spec/short-node short-hand)
-        [tag attrs & content] (if (symbol? body) [body] body)
+        [tag attrs & content] (if (keyword? body) [body] body)
         tag (to-long-name tag)
         attrs (if (nil? attrs) {} attrs)
         [content attrs] (if (map? attrs)
                           [content (reduce (fn [out [k v]] (assoc out (to-long-name k) (escape (str v)))) {} attrs)]
                           [(into [attrs] content) {}])
           content (if-not (empty? content)
-                    (mapv #(if (or (vector? %) (symbol? %)) (to-long-hand %) (str %)) content)
+                    (mapv #(if (or (vector? %) (keyword? %)) (to-long-hand %) (str %)) content)
                     content)
           node (reduce-kv #(if (empty? %3) %1 (assoc %1 %2 %3))
                           {:tag tag}

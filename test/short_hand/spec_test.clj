@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [short-hand.spec :as spec]
             [clojure.spec.alpha :as s]
-            [pred-i-kit.core :as p]
             [clj-time.core :as t]
             [clojure.java.io :as io])
   (:import (java.net URL URI)
@@ -11,11 +10,11 @@
            (java.nio.file Path)))
 
 (deftest test-short-name
-  (is (= nil (s/explain-data ::spec/short-name 'hi-there)))
+  (is (= nil (s/explain-data ::spec/short-name :hi-there)))
 
-  (is (= nil (s/explain-data ::spec/short-name 'hi/there)))
+  (is (= nil (s/explain-data ::spec/short-name :hi/there)))
 
-  (let [{problems ::s/problems spec ::s/spec value ::s/value} (s/explain-data ::spec/short-name '?)
+  (let [{problems ::s/problems spec ::s/spec value ::s/value} (s/explain-data ::spec/short-name :?)
         [{in1 :in path1 :path [func1 ns-reg name-reg] :pred val1 :val via1 :via}
          {in2 :in path2 :path [func2 regex] :pred val2 :val via2 :via}]
         problems]
@@ -25,16 +24,16 @@
     (is (= (str #"[a-zA-Z][a-zA-Z0-9_-]*") (str ns-reg)))
     (is (= (str #"[a-zA-Z][a-zA-Z0-9_-]*") (str name-reg)))
     (is (= [:with-ns] path1))
-    (is (= '? val1))
+    (is (= :? val1))
     (is (= [::spec/short-name] via1))
     (is (= [] in2))
     (is (= 'pred-i-kit.core/named-as func2))
     (is (= (str #"[a-zA-Z][a-zA-Z0-9_-]*") (str regex)))
     (is (= [:no-ns] path2))
-    (is (= '? val2))
+    (is (= :? val2))
     (is (= [::spec/short-name] via2))
     (is (= ::spec/short-name spec))
-    (is (= '? value))
+    (is (= :? value))
     )
   )
 
@@ -79,17 +78,17 @@
 (deftest test-attrs
   (is (= nil (s/explain-data
                ::spec/short-attrs
-               {'a true
-                'b 324
-                'c 4.5
-                'd 7/22
-                'e 22/7
-                'f "hi there"
-                'g (t/date-time 2014 5 17 22 33 45)
-                'h (io/file "hi-there.txt")
-                'i (URL. "http://www.imdb.com")
-                'j (URI. "hi-there.txt")
-                'k (.toPath ^File (io/file "hi-there.txt"))})))
+               {:a true
+                :b 324
+                :c 4.5
+                :d 7/22
+                :e 22/7
+                :f "hi there"
+                :g (t/date-time 2014 5 17 22 33 45)
+                :h (io/file "hi-there.txt")
+                :i (URL. "http://www.imdb.com")
+                :j (URI. "hi-there.txt")
+                :k (.toPath ^File (io/file "hi-there.txt"))})))
   )
 
 (deftest test-long-attr-str
@@ -249,7 +248,7 @@
   )
 
 (deftest test-short-node
-  (is (= nil (s/explain-data ::spec/short-node '[a 1 2 3 "4" true]))))
+  (is (= nil (s/explain-data ::spec/short-node [:a 1 2 3 "4" true]))))
 
 
 
